@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -100,6 +100,7 @@ vim.g.have_nerd_font = false
 
 -- Make line numbers default
 vim.o.number = true
+vim.o.relativenumber = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
 -- vim.o.relativenumber = true
@@ -132,7 +133,7 @@ vim.o.smartcase = true
 vim.o.signcolumn = 'yes'
 
 -- Decrease update time
-vim.o.updatetime = 250
+vim.o.updatetime = 100
 
 -- Decrease mapped sequence wait time
 vim.o.timeoutlen = 300
@@ -154,6 +155,7 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
+vim.o.guicursor = ''
 
 -- Show which line your cursor is on
 vim.o.cursorline = true
@@ -165,6 +167,9 @@ vim.o.scrolloff = 10
 -- instead raise a dialog asking if you wish to save the current file(s)
 -- See `:help 'confirm'`
 vim.o.confirm = true
+
+-- Auto-reload files when changed externally (e.g., by opencode)
+vim.o.autoread = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -183,6 +188,13 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+local opts = { noremap = true, silent = true, desc = 'Exit Insert/Visual/Terminal mode' }
+
+-- Exit Insert mode with 'jk'
+vim.keymap.set('i', 'jk', '<Esc>', opts)
+
+-- Exit Visual mode with 'jk'
+vim.keymap.set('v', 'jk', '<Esc>', opts)
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -198,6 +210,18 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Terminal mode window navigation for opencode
+vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w><C-h>', { desc = 'Move focus to the left window' })
+vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w><C-l>', { desc = 'Move focus to the right window' })
+vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w><C-j>', { desc = 'Move focus to the lower window' })
+vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('n', '<leader>w', '<cmd>w<cr>', { desc = 'Save file' })
+vim.keymap.set('n', '<leader>|', '<cmd>vsplit<cr>', { desc = 'Split window vertically' })
+vim.keymap.set('n', '<leader>-', '<cmd>split<cr>', { desc = 'Split window horizontally' })
+vim.keymap.set({ 'n', 'x' }, '<leader>ca', function()
+  require('tiny-code-action').code_action()
+end, { noremap = true, silent = true, desc = '[C]ode [A]ction' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -249,6 +273,166 @@ require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
 
+  {
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'MunifTanjim/nui.nvim',
+      'nvim-tree/nvim-web-devicons',
+    },
+    lazy = false,
+    keys = {
+      { '<leader>e', '<Cmd>Neotree toggle reveal<CR>', desc = 'Toggle Neo-tree' },
+    },
+    opts = {
+      sources = { 'filesystem', 'git_status', 'buffers' },
+      filesystem = {
+        follow_current_file = {
+          enabled = true,
+          leave_dirs_open = false,
+        },
+        filtered_items = {
+          visible = true,
+          hide_dotfiles = false,
+          hide_gitignored = false,
+        },
+      },
+    },
+  },
+  {
+    'akinsho/bufferline.nvim',
+    version = '*',
+    dependencies = 'nvim-tree/nvim-web-devicons',
+    config = function()
+      require('bufferline').setup {
+        options = {
+          mode = 'buffers',
+          themable = true,
+          numbers = 'none',
+          diagnostics = 'nvim_lsp',
+          show_buffer_close_icons = true,
+          show_close_icon = true,
+          show_tab_indicators = true,
+          separator_style = 'thin',
+          always_show_bufferline = true,
+        },
+      }
+      vim.keymap.set('n', '<S-h>', '<cmd>BufferLineCyclePrev<CR>', { desc = 'Previous buffer' })
+      vim.keymap.set('n', '<S-l>', '<cmd>BufferLineCycleNext<CR>', { desc = 'Next buffer' })
+    end,
+  },
+  {
+    'gbprod/yanky.nvim',
+    dependencies = {
+      { 'kkharji/sqlite.lua' },
+      { 'nvim-telescope/telescope.nvim' },
+    },
+    opts = {
+      ring = { storage = 'sqlite' },
+      picker = {
+        telescope = {
+          use_default_mappings = true,
+        },
+      },
+    },
+    keys = {
+      { '<leader>p', '<cmd>Telescope yank_history<cr>', mode = { 'n', 'x' }, desc = 'Open Yank History with Preview' },
+      { 'y', '<Plug>(YankyYank)', mode = { 'n', 'x' }, desc = 'Yank text' },
+      { 'p', '<Plug>(YankyPutAfter)', mode = { 'n', 'x' }, desc = 'Put yanked text after cursor' },
+      { 'P', '<Plug>(YankyPutBefore)', mode = { 'n', 'x' }, desc = 'Put yanked text before cursor' },
+      { 'gp', '<Plug>(YankyGPutAfter)', mode = { 'n', 'x' }, desc = 'Put yanked text after selection' },
+      { 'gP', '<Plug>(YankyGPutBefore)', mode = { 'n', 'x' }, desc = 'Put yanked text before selection' },
+      { '<c-p>', '<Plug>(YankyPreviousEntry)', desc = 'Select previous entry through yank history' },
+      { '<c-n>', '<Plug>(YankyNextEntry)', desc = 'Select next entry through yank history' },
+      { ']p', '<Plug>(YankyPutIndentAfterLinewise)', desc = 'Put indented after cursor (linewise)' },
+      { '[p', '<Plug>(YankyPutIndentBeforeLinewise)', desc = 'Put indented before cursor (linewise)' },
+      { ']P', '<Plug>(YankyPutIndentAfterLinewise)', desc = 'Put indented after cursor (linewise)' },
+      { '[P', '<Plug>(YankyPutIndentBeforeLinewise)', desc = 'Put indented before cursor (linewise)' },
+      { '>p', '<Plug>(YankyPutIndentAfterShiftRight)', desc = 'Put and indent right' },
+      { '<p', '<Plug>(YankyPutIndentAfterShiftLeft)', desc = 'Put and indent left' },
+      { '>P', '<Plug>(YankyPutIndentBeforeShiftRight)', desc = 'Put before and indent right' },
+      { '<P', '<Plug>(YankyPutIndentBeforeShiftLeft)', desc = 'Put before and indent left' },
+      { '=p', '<Plug>(YankyPutAfterFilter)', desc = 'Put after applying a filter' },
+      { '=P', '<Plug>(YankyPutBeforeFilter)', desc = 'Put before applying a filter' },
+    },
+  },
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local harpoon = require 'harpoon'
+      harpoon:setup {}
+
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+      end, { desc = 'Harpoon [A]dd file' })
+
+      vim.keymap.set('n', '<C-e>', function()
+        harpoon.ui:toggle_quick_menu(harpoon:list())
+      end, { desc = 'Harpoon menu' })
+
+      vim.keymap.set('n', '<C-1>', function()
+        harpoon:list():select(1)
+      end, { desc = 'Harpoon file 1' })
+      vim.keymap.set('n', '<C-2>', function()
+        harpoon:list():select(2)
+      end, { desc = 'Harpoon file 2' })
+      vim.keymap.set('n', '<C-3>', function()
+        harpoon:list():select(3)
+      end, { desc = 'Harpoon file 3' })
+      vim.keymap.set('n', '<C-4>', function()
+        harpoon:list():select(4)
+      end, { desc = 'Harpoon file 4' })
+
+      vim.keymap.set('n', '<C-S-P>', function()
+        harpoon:list():prev()
+      end, { desc = 'Harpoon previous' })
+      vim.keymap.set('n', '<C-S-N>', function()
+        harpoon:list():next()
+      end, { desc = 'Harpoon next' })
+    end,
+  },
+  {
+    'folke/trouble.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    opts = {},
+    cmd = 'Trouble',
+    keys = {
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
+      },
+      {
+        '<leader>xl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
+      },
+      {
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
+      },
+      {
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
+      },
+    },
+  },
+
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -271,6 +455,22 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
+  {
+    'kdheepak/lazygit.nvim',
+    cmd = {
+      'LazyGit',
+      'LazyGitConfig',
+      'LazyGitCurrentFile',
+      'LazyGitFilter',
+      'LazyGitFilterCurrentFile',
+    },
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+    keys = {
+      { '<leader>gg', '<cmd>LazyGit<cr>', desc = 'LazyGit' },
+    },
+  },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -281,6 +481,61 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      on_attach = function(bufnr)
+        local gitsigns = require 'gitsigns'
+
+        local function map(mode, l, r, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, l, r, opts)
+        end
+
+        map('n', '<leader>gb', function()
+          gitsigns.blame_line { full = true }
+        end, { desc = '[G]it [B]lame line' })
+
+        map('n', '<leader>gtb', gitsigns.toggle_current_line_blame, { desc = '[G]it [T]oggle line [B]lame' })
+
+        map('n', '<leader>gd', gitsigns.diffthis, { desc = '[G]it [D]iff buffer' })
+
+        map('n', '<leader>gD', function()
+          gitsigns.diffthis '~'
+        end, { desc = '[G]it [D]iff buffer against last commit' })
+
+        map('n', '<leader>gp', gitsigns.preview_hunk, { desc = '[G]it [P]review hunk' })
+
+        map('n', '<leader>gr', gitsigns.reset_hunk, { desc = '[G]it [R]eset hunk' })
+        map('v', '<leader>gr', function()
+          gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = '[G]it [R]eset hunk' })
+
+        map('n', '<leader>gR', gitsigns.reset_buffer, { desc = '[G]it [R]eset buffer' })
+
+        map('n', '<leader>gs', gitsigns.stage_hunk, { desc = '[G]it [S]tage hunk' })
+        map('v', '<leader>gs', function()
+          gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = '[G]it [S]tage hunk' })
+
+        map('n', '<leader>gS', gitsigns.stage_buffer, { desc = '[G]it [S]tage buffer' })
+
+        map('n', '<leader>gu', gitsigns.undo_stage_hunk, { desc = '[G]it [U]ndo stage hunk' })
+
+        map('n', ']h', function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']c', bang = true }
+          else
+            gitsigns.nav_hunk 'next'
+          end
+        end, { desc = 'Jump to next git hunk' })
+
+        map('n', '[h', function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[c', bang = true }
+          else
+            gitsigns.nav_hunk 'prev'
+          end
+        end, { desc = 'Jump to previous git hunk' })
+      end,
     },
   },
 
@@ -346,7 +601,9 @@ require('lazy').setup({
       spec = {
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
+        { '<leader>g', group = '[G]it' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>x', group = 'Trouble Diagnostics' },
       },
     },
   },
@@ -429,10 +686,16 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<leader>sa', function()
+        builtin.find_files { hidden = true, no_ignore = true }
+      end, { desc = '[S]earch [A]ll files (including hidden)' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
+      vim.keymap.set('n', '<leader>sD', function()
+        builtin.diagnostics { bufnr = 0 }
+      end, { desc = '[S]earch [D]iagnostics (current buffer)' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
@@ -459,6 +722,79 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      vim.keymap.set('n', '<leader>gc', builtin.git_bcommits, { desc = '[G]it buffer [C]ommits' })
+      vim.keymap.set('n', '<leader>gC', builtin.git_commits, { desc = '[G]it [C]ommits (all)' })
+      vim.keymap.set('n', '<leader>gt', builtin.git_status, { desc = '[G]it s[T]atus' })
+      vim.keymap.set('n', '<leader>gB', builtin.git_branches, { desc = '[G]it [B]ranches' })
+    end,
+  },
+  {
+    'rachartier/tiny-code-action.nvim',
+    dependencies = {
+      { 'nvim-lua/plenary.nvim' },
+
+      -- optional picker via telescope
+      { 'nvim-telescope/telescope.nvim' },
+      -- optional picker via fzf-lua
+      -- .. or via snacks
+    },
+    event = 'LspAttach',
+    opts = {},
+  },
+  {
+    'NickvanDyke/opencode.nvim',
+    dependencies = {
+      -- Recommended for `ask()` and `select()`.
+      -- Required for `toggle()`.
+      {
+        'folke/snacks.nvim',
+        opts = {
+          input = {},
+          picker = {},
+          terminal = {},
+        },
+      },
+    },
+    config = function()
+      vim.g.opencode_opts = {
+        -- Your configuration, if any — see `lua/opencode/config.lua`, or "goto definition" on `opencode_opts`.
+      }
+
+      -- Required for `vim.g.opencode_opts.auto_reload`.
+      vim.o.autoread = true
+
+      -- Recommended/example keymaps.
+      vim.keymap.set({ 'n', 'x' }, '<leader>oa', function()
+        require('opencode').ask('@this: ', { submit = true })
+      end, { desc = 'Ask about this' })
+      vim.keymap.set({ 'n', 'x' }, '<leader>os', function()
+        require('opencode').select()
+      end, { desc = 'Select prompt' })
+      vim.keymap.set({ 'n', 'x' }, '<leader>o+', function()
+        require('opencode').prompt '@this'
+      end, { desc = 'Add this' })
+      vim.keymap.set('n', '<leader>ot', function()
+        require('opencode').toggle()
+      end, { desc = 'Toggle embedded' })
+      vim.keymap.set('n', '<leader>oc', function()
+        require('opencode').command()
+      end, { desc = 'Select command' })
+      vim.keymap.set('n', '<leader>on', function()
+        require('opencode').command 'session_new'
+      end, { desc = 'New session' })
+      vim.keymap.set('n', '<leader>oi', function()
+        require('opencode').command 'session_interrupt'
+      end, { desc = 'Interrupt session' })
+      vim.keymap.set('n', '<leader>oA', function()
+        require('opencode').command 'agent_cycle'
+      end, { desc = 'Cycle selected agent' })
+      vim.keymap.set('n', '<S-C-u>', function()
+        require('opencode').command 'messages_half_page_up'
+      end, { desc = 'Messages half page up' })
+      vim.keymap.set('n', '<S-C-d>', function()
+        require('opencode').command 'messages_half_page_down'
+      end, { desc = 'Messages half page down' })
     end,
   },
 
@@ -685,16 +1021,129 @@ require('lazy').setup({
         --
 
         lua_ls = {
-          -- cmd = { ... },
-          -- filetypes = { ... },
-          -- capabilities = {},
           settings = {
             Lua = {
               completion = {
                 callSnippet = 'Replace',
               },
-              -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
+            },
+          },
+        },
+        vtsls = {
+          settings = {
+            complete_function_calls = true,
+            typescript = {
+              suggest = {
+                autoImports = true,
+                completeFunctionCalls = true,
+                includeCompletionsForModuleExports = true,
+                includeCompletionsWithInsertText = true,
+                objectLiteralMethodCompletions = true,
+                includeCompletionsForImportStatements = true,
+              },
+              preferences = {
+                includeCompletionsForModuleExports = true,
+                includeCompletionsWithInsertText = true,
+                importModuleSpecifier = 'relative',
+                quoteStyle = 'single',
+              },
+            },
+            javascript = {
+              suggest = {
+                autoImports = true,
+                completeFunctionCalls = true,
+                includeCompletionsForModuleExports = true,
+                includeCompletionsWithInsertText = true,
+                objectLiteralMethodCompletions = true,
+                includeCompletionsForImportStatements = true,
+              },
+              preferences = {
+                includeCompletionsForModuleExports = true,
+                includeCompletionsWithInsertText = true,
+                importModuleSpecifier = 'relative',
+                quoteStyle = 'single',
+              },
+            },
+            vtsls = {
+              enableMoveToFileCodeAction = true,
+              autoUseWorkspaceTsdk = true,
+              experimental = {
+                maxInlayHintLength = 30,
+                completion = {
+                  enableServerSideFuzzyMatch = true,
+                  enableCompleteFunctionCalls = true,
+                },
+              },
+              typescript = {
+                preferences = {
+                  includeCompletionsForModuleExports = true,
+                  includeCompletionsWithInsertText = true,
+                  includeCompletionsForImportStatements = true,
+                  importModuleSpecifier = 'relative',
+                },
+                suggest = {
+                  autoImports = true,
+                  completeFunctionCalls = true,
+                  includeCompletionsForModuleExports = true,
+                  includeCompletionsWithInsertText = true,
+                  objectLiteralMethodCompletions = true,
+                  includeCompletionsWithSnippetText = true,
+                },
+              },
+              typescript = {
+                updateImportsOnFileMove = { enabled = 'always' },
+                suggest = {
+                  completeFunctionCalls = true,
+                  includeCompletionsForModuleExports = true,
+                  includeAutomaticOptionalChainCompletions = true,
+                  includeCompletionsWithInsertText = true,
+                  objectLiteralMethodCompletions = true,
+                  includeCompletionsForImportStatements = true,
+                  autoImports = true,
+                },
+                preferences = {
+                  includeCompletionsForModuleExports = true,
+                  includeCompletionsWithInsertText = true,
+                  importModuleSpecifier = 'relative',
+                  quoteStyle = 'single',
+                },
+                completions = {
+                  completeFunctionCalls = true,
+                },
+                inlayHints = {
+                  enumMemberValues = { enabled = true },
+                  functionLikeReturnTypes = { enabled = true },
+                  parameterNames = { enabled = 'literals' },
+                  parameterTypes = { enabled = true },
+                  propertyDeclarationTypes = { enabled = true },
+                  variableTypes = { enabled = false },
+                },
+              },
+            },
+            javascript = {
+              updateImportsOnFileMove = { enabled = 'always' },
+              suggest = {
+                completeFunctionCalls = true,
+                includeCompletionsForModuleExports = true,
+                includeAutomaticOptionalChainCompletions = true,
+                includeCompletionsWithInsertText = true,
+                objectLiteralMethodCompletions = true,
+              },
+              completions = {
+                completeFunctionCalls = true,
+              },
+              inlayHints = {
+                enumMemberValues = { enabled = true },
+                functionLikeReturnTypes = { enabled = true },
+                parameterNames = { enabled = 'literals' },
+                parameterTypes = { enabled = true },
+                propertyDeclarationTypes = { enabled = true },
+                variableTypes = { enabled = false },
+              },
+              preferences = {
+                importModuleSpecifier = 'relative',
+                quoteStyle = 'single',
+              },
             },
           },
         },
@@ -753,30 +1202,63 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
         local disable_filetypes = { c = true, cpp = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
           return {
-            timeout_ms = 500,
+            timeout_ms = 10000,
             lsp_format = 'fallback',
           }
         end
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettier' },
+        typescript = { 'prettier' },
+        javascriptreact = { 'prettier' },
+        typescriptreact = { 'prettier' },
+        json = { 'prettier' },
+        css = { 'prettier' },
+        scss = { 'prettier' },
+        html = { 'prettier' },
+      },
+      formatters = {
+        prettier = {
+          command = 'node_modules/.bin/prettier',
+          timeout_ms = 10000,
+        },
       },
     },
   },
 
+  {
+    'zbirenbaum/copilot.lua',
+    event = 'InsertEnter',
+    opts = {
+      suggestion = {
+        enabled = true,
+        auto_trigger = true,
+        keymap = {
+          accept = '<Tab>',
+          accept_word = false,
+          accept_line = false,
+          next = '<M-]>',
+          prev = '<M-[>',
+          dismiss = '<C-]>',
+        },
+      },
+      panel = { enabled = false },
+      filetypes = {
+        yaml = true,
+        markdown = true,
+        help = false,
+        gitcommit = true,
+        gitrebase = false,
+        ['.'] = true,
+      },
+    },
+  },
   { -- Autocompletion
     'saghen/blink.cmp',
     event = 'VimEnter',
@@ -809,6 +1291,13 @@ require('lazy').setup({
         opts = {},
       },
       'folke/lazydev.nvim',
+      'zbirenbaum/copilot.lua',
+      {
+        'saghen/blink.compat',
+        version = '*',
+        lazy = true,
+        opts = {},
+      },
     },
     --- @module 'blink.cmp'
     --- @type blink.cmp.Config
@@ -835,11 +1324,16 @@ require('lazy').setup({
         -- <c-k>: Toggle signature help
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'default',
+        preset = 'enter',
+
+        ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
+        ['<C-d>'] = { 'scroll_documentation_down', 'fallback' },
 
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
       },
+
+      accept = { auto_brackets = { enabled = true } },
 
       appearance = {
         -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
@@ -848,15 +1342,35 @@ require('lazy').setup({
       },
 
       completion = {
-        -- By default, you may press `<c-space>` to show the documentation.
-        -- Optionally, set `auto_show = true` to show the documentation after a delay.
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        -- Auto-show documentation like VS Code for better context
+        documentation = { auto_show = true, auto_show_delay_ms = 200 },
+        menu = {
+          border = 'rounded',
+          draw = {
+            columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 }, { 'kind' } },
+          },
+        },
+        ghost_text = { enabled = true },
       },
 
       sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        default = { 'lsp', 'path', 'snippets', 'copilot', 'buffer', 'lazydev' },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+          copilot = {
+            name = 'copilot',
+            module = 'blink.compat.source',
+            score_offset = 90,
+            async = true,
+            opts = {},
+          },
+          buffer = {
+            module = 'blink.cmp.sources.buffer',
+            opts = {
+              max_items = 5,
+              min_keyword_length = 3,
+            },
+          },
         },
       },
 
@@ -941,8 +1455,10 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+    config = function(_, opts)
+      require('nvim-treesitter.configs').setup(opts)
+    end,
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
@@ -976,9 +1492,9 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
