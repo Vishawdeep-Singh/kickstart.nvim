@@ -7,7 +7,7 @@ return {
   {
     'nvim-tree/nvim-web-devicons',
     config = function()
-      require('nvim-web-devicons').setup({
+      require('nvim-web-devicons').setup {
         override = {},
         default = true,
         strict = true,
@@ -25,7 +25,7 @@ return {
             name = 'Svg',
           },
         },
-      })
+      }
     end,
   },
 }

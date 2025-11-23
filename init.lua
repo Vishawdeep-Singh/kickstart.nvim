@@ -171,6 +171,13 @@ vim.o.confirm = true
 -- Auto-reload files when changed externally (e.g., by opencode)
 vim.o.autoread = true
 
+-- Configure folding with Treesitter
+vim.o.foldmethod = 'expr'
+vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.o.foldenable = false -- Start with all folds open
+vim.o.foldlevel = 99 -- High value ensures folds are open by default
+vim.o.foldlevelstart = 99 -- Open all folds when opening a buffer
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -481,6 +488,8 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      word_diff = false, -- Can be toggled with keymap
+      current_line_blame = false, -- Can be toggled with keymap
       on_attach = function(bufnr)
         local gitsigns = require 'gitsigns'
 
@@ -496,7 +505,29 @@ require('lazy').setup({
 
         map('n', '<leader>gtb', gitsigns.toggle_current_line_blame, { desc = '[G]it [T]oggle line [B]lame' })
 
+        map('n', '<leader>td', gitsigns.toggle_signs, { desc = '[T]oggle [D]iff signs (git hunks)' })
+
+        map('n', '<leader>tw', gitsigns.toggle_word_diff, { desc = '[T]oggle [W]ord diff (inline red/green)' })
+
         map('n', '<leader>gd', gitsigns.diffthis, { desc = '[G]it [D]iff buffer' })
+
+        -- Toggle inline diff view with syntax highlighting
+        map('n', '<leader>tD', function()
+          if vim.wo.diff then
+            vim.cmd 'diffoff'
+          else
+            gitsigns.diffthis()
+          end
+        end, { desc = '[T]oggle [D]iff view (inline)' })
+
+        -- Toggle split diff view for clearer comparison
+        map('n', '<leader>tS', function()
+          if vim.wo.diff then
+            vim.cmd 'diffoff'
+          else
+            vim.cmd 'Gitsigns diffthis ~'
+          end
+        end, { desc = '[T]oggle [S]plit diff view' })
 
         map('n', '<leader>gD', function()
           gitsigns.diffthis '~'
@@ -600,10 +631,12 @@ require('lazy').setup({
       -- Document existing key chains
       spec = {
         { '<leader>s', group = '[S]earch' },
-        { '<leader>t', group = '[T]oggle' },
+        { '<leader>t', group = '[T]oggle', mode = { 'n', 'v' } },
         { '<leader>g', group = '[G]it' },
+        { '<leader>gt', group = '[G]it [T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<leader>x', group = 'Trouble Diagnostics' },
+        { '<leader>c', group = '[C]ode' },
       },
     },
   },
@@ -727,6 +760,53 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>gC', builtin.git_commits, { desc = '[G]it [C]ommits (all)' })
       vim.keymap.set('n', '<leader>gt', builtin.git_status, { desc = '[G]it s[T]atus' })
       vim.keymap.set('n', '<leader>gB', builtin.git_branches, { desc = '[G]it [B]ranches' })
+
+      -- Monorepo-wide symbol search
+      vim.keymap.set('n', '<leader>sM', function()
+        -- Get git root to search entire monorepo
+        local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+        if vim.v.shell_error ~= 0 then
+          git_root = vim.fn.getcwd()
+        end
+
+        builtin.live_grep {
+          prompt_title = 'Search Symbols (Monorepo)',
+          cwd = git_root,
+          -- Exclude common build and dependency directories
+          glob_pattern = { '!**/node_modules/**', '!**/dist/**', '!**/build/**', '!**/.next/**', '!**/.turbo/**', '!**/coverage/**' },
+          -- Common symbol patterns - you can type these or your own pattern
+          -- Examples: "^function ", "^class ", "^const.*=.*=>", "^export.*function"
+        }
+      end, { desc = '[S]earch [M]onorepo symbols' })
+
+      -- Alternative: Search for specific symbol types
+      vim.keymap.set('n', '<leader>sF', function()
+        local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+        if vim.v.shell_error ~= 0 then
+          git_root = vim.fn.getcwd()
+        end
+
+        builtin.live_grep {
+          prompt_title = 'Search Functions (Monorepo)',
+          cwd = git_root,
+          default_text = '^(function|const.*=|export.*function|async.*function)',
+          glob_pattern = { '!**/node_modules/**', '!**/dist/**', '!**/build/**', '!**/.next/**', '!**/.turbo/**' },
+        }
+      end, { desc = '[S]earch [F]unctions (monorepo)' })
+
+      vim.keymap.set('n', '<leader>sC', function()
+        local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+        if vim.v.shell_error ~= 0 then
+          git_root = vim.fn.getcwd()
+        end
+
+        builtin.live_grep {
+          prompt_title = 'Search Classes (Monorepo)',
+          cwd = git_root,
+          default_text = '^(class|interface|type|enum)',
+          glob_pattern = { '!**/node_modules/**', '!**/dist/**', '!**/build/**', '!**/.next/**', '!**/.turbo/**' },
+        }
+      end, { desc = '[S]earch [C]lasses/Types (monorepo)' })
     end,
   },
   {
@@ -1009,7 +1089,6 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -1019,6 +1098,28 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
+
+        pyright = {
+          settings = {
+            python = {
+              analysis = {
+                typeCheckingMode = 'standard',
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+                diagnosticMode = 'openFilesOnly',
+              },
+            },
+          },
+        },
+
+        ruff = {
+          init_options = {
+            settings = {
+              -- Ruff language server settings
+              args = {},
+            },
+          },
+        },
 
         lua_ls = {
           settings = {
@@ -1214,6 +1315,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        python = { 'ruff_format', 'ruff_organize_imports' },
         javascript = { 'prettier' },
         typescript = { 'prettier' },
         javascriptreact = { 'prettier' },
@@ -1240,9 +1342,9 @@ require('lazy').setup({
         enabled = true,
         auto_trigger = true,
         keymap = {
-          accept = '<Tab>',
-          accept_word = false,
-          accept_line = false,
+          accept = '<C-y>', -- Ctrl+y to accept suggestion (standard vim completion key)
+          accept_word = '<M-w>',
+          accept_line = '<M-l>',
           next = '<M-]>',
           prev = '<M-[>',
           dismiss = '<C-]>',
@@ -1291,7 +1393,6 @@ require('lazy').setup({
         opts = {},
       },
       'folke/lazydev.nvim',
-      'zbirenbaum/copilot.lua',
       {
         'saghen/blink.compat',
         version = '*',
@@ -1325,6 +1426,10 @@ require('lazy').setup({
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'enter',
+
+        -- Add Tab for accepting completions (works when completion menu is open)
+        ['<Tab>'] = { 'select_next', 'snippet_forward', 'fallback' },
+        ['<S-Tab>'] = { 'select_prev', 'snippet_backward', 'fallback' },
 
         ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
         ['<C-d>'] = { 'scroll_documentation_down', 'fallback' },
@@ -1383,7 +1488,7 @@ require('lazy').setup({
       -- the rust implementation via `'prefer_rust_with_warning'`
       --
       -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'lua' },
+      fuzzy = { implementation = 'prefer_rust_with_warning' }, -- Changed to rust for better performance
 
       -- Shows a signature help window while you type arguments for a function
       signature = { enabled = true },
@@ -1409,6 +1514,28 @@ require('lazy').setup({
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
       vim.cmd.colorscheme 'tokyonight-night'
+    end,
+  },
+  {
+    'sainnhe/everforest',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      -- Optionally configure and load the colorscheme
+      -- directly inside the plugin declaration.
+      vim.g.everforest_background = 'hard'
+      vim.g.everforest_enable_italic = true
+      vim.cmd.colorscheme 'everforest'
+
+      -- Fix ghost text color for autocompletion suggestions
+      -- Set it to a dim gray color similar to Tokyo Night's ghost text
+      vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { fg = '#5a6474', italic = true })
+
+      -- Fix diagnostic colors to be more visible instead of gray
+      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextWarn', { fg = '#d4a520', italic = true })
+      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#e67e80', italic = true })
+      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextInfo', { fg = '#7fbbb3', italic = true })
+      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextHint', { fg = '#83a598', italic = true })
     end,
   },
 
@@ -1471,6 +1598,7 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+      fold = { enable = true }, -- Enable Treesitter-based folding
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
@@ -1480,6 +1608,48 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  {
+    'stevearc/aerial.nvim',
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+      'nvim-tree/nvim-web-devicons',
+      'nvim-telescope/telescope.nvim',
+    },
+    config = function()
+      require('aerial').setup {
+        -- Configure aerial options here
+        backends = { 'treesitter', 'lsp', 'markdown', 'asciidoc', 'man' },
+        layout = {
+          default_direction = 'prefer_right',
+        },
+        -- Filter which symbol kinds to show
+
+        filter_kind = {
+          'Class',
+          'Constructor',
+          'Enum',
+          'Function',
+          'Interface',
+          'Method',
+          'Module',
+          'Struct',
+          'Variable',
+          'Property', -- For object properties
+          'Field', -- For class fields
+          'Constant', -- For const declarations
+        },
+      }
+
+      -- Load Aerial telescope extension
+      require('telescope').load_extension 'aerial'
+
+      -- Keymaps for Aerial
+      vim.keymap.set('n', '<leader>cs', '<cmd>AerialToggle<CR>', { desc = '[C]ode [S]ymbols (Aerial)' })
+      vim.keymap.set('n', '<leader>cS', '<cmd>Telescope aerial<CR>', { desc = '[C]ode [S]ymbols (Telescope)' })
+      vim.keymap.set('n', '{', '<cmd>AerialPrev<CR>', { desc = 'Jump to previous symbol' })
+      vim.keymap.set('n', '}', '<cmd>AerialNext<CR>', { desc = 'Jump to next symbol' })
+    end,
+  },
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
