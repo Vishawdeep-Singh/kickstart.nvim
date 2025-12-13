@@ -227,13 +227,8 @@ vim.keymap.set('n', '<leader>w', '<cmd>w<cr>', { desc = 'Save file' })
 vim.keymap.set('n', '<leader>|', '<cmd>vsplit<cr>', { desc = 'Split window vertically' })
 vim.keymap.set('n', '<leader>-', '<cmd>split<cr>', { desc = 'Split window horizontally' })
 vim.keymap.set({ 'n', 'x' }, '<leader>ca', function()
-  require('tiny-code-action').code_action {}
+  require('tiny-code-action').code_action({})
 end, { noremap = true, silent = true, desc = '[C]ode [A]ction' })
-
--- Merge conflict helper keymaps (Diffview)
-vim.keymap.set('n', '<leader>mo', '<cmd>DiffviewOpen<cr>', { desc = '[M]erge: [O]pen diffview' })
-vim.keymap.set('n', '<leader>mf', '<cmd>DiffviewFocusFiles<cr>', { desc = '[M]erge: [F]ocus files panel' })
-vim.keymap.set('n', '<leader>mt', '<cmd>DiffviewToggleFiles<cr>', { desc = '[M]erge: [T]oggle files panel' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -483,72 +478,6 @@ require('lazy').setup({
       { '<leader>gg', '<cmd>LazyGit<cr>', desc = 'LazyGit' },
     },
   },
-  {
-    'sindrets/diffview.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    cmd = { 'DiffviewOpen', 'DiffviewClose', 'DiffviewFileHistory' },
-    keys = {
-      { '<leader>dv', '<cmd>DiffviewOpen<cr>', desc = '[D]iff[V]iew open' },
-      { '<leader>dc', '<cmd>DiffviewClose<cr>', desc = '[D]iff[V]iew [C]lose' },
-      { '<leader>dh', '<cmd>DiffviewFileHistory<cr>', desc = '[D]iff[V]iew file [H]istory' },
-      { '<leader>dH', '<cmd>DiffviewFileHistory %<cr>', desc = '[D]iff[V]iew current file [H]istory' },
-    },
-    config = function()
-      require('diffview').setup {
-        enhanced_diff_hl = true,
-        view = {
-          merge_tool = {
-            layout = 'diff3_mixed',
-            disable_diagnostics = true,
-          },
-        },
-        file_panel = {
-          win_config = {
-            width = 40,
-          },
-        },
-      }
-    end,
-  },
-  {
-    'sindrets/diffview.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    cmd = { 'DiffviewOpen', 'DiffviewClose', 'DiffviewFileHistory' },
-    keys = {
-      { '<leader>dv', '<cmd>DiffviewOpen<cr>', desc = '[D]iff[V]iew open' },
-      { '<leader>dc', '<cmd>DiffviewClose<cr>', desc = '[D]iff[V]iew [C]lose' },
-      { '<leader>dh', '<cmd>DiffviewFileHistory<cr>', desc = '[D]iff[V]iew file [H]istory' },
-      { '<leader>dH', '<cmd>DiffviewFileHistory %<cr>', desc = '[D]iff[V]iew current file [H]istory' },
-    },
-    config = function()
-      require('diffview').setup {
-        enhanced_diff_hl = true,
-        view = {
-          merge_tool = {
-            layout = 'diff3_mixed',
-            disable_diagnostics = true,
-          },
-        },
-        file_panel = {
-          win_config = {
-            width = 40,
-          },
-        },
-        keymaps = {
-          disable_default_keymaps = false,
-          view = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close diffview' } },
-          },
-          file_panel = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close diffview' } },
-          },
-          file_history_panel = {
-            { 'n', 'q', '<cmd>DiffviewClose<cr>', { desc = 'Close diffview' } },
-          },
-        },
-      }
-    end,
-  },
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -561,14 +490,14 @@ require('lazy').setup({
       },
       word_diff = false, -- Can be toggled with keymap
       current_line_blame = false, -- Can be toggled with keymap
-      on_attach = function(bufnr)
-        local gitsigns = require 'gitsigns'
+       on_attach = function(bufnr)
+         local gitsigns = require 'gitsigns'
 
-        local function map(mode, l, r, map_opts)
-          map_opts = map_opts or {}
-          map_opts.buffer = bufnr
-          vim.keymap.set(mode, l, r, map_opts)
-        end
+         local function map(mode, l, r, map_opts)
+           map_opts = map_opts or {}
+           map_opts.buffer = bufnr
+           vim.keymap.set(mode, l, r, map_opts)
+         end
 
         map('n', '<leader>gb', function()
           gitsigns.blame_line { full = true }
@@ -620,7 +549,9 @@ require('lazy').setup({
 
         map('n', '<leader>gS', gitsigns.stage_buffer, { desc = '[G]it [S]tage buffer' })
 
-        map('n', '<leader>gu', gitsigns.undo_stage_hunk, { desc = '[G]it [U]ndo stage hunk' })
+         map('n', '<leader>gu', function()
+           gitsigns.stage_hunk()
+         end, { desc = '[G]it [U]ndo stage hunk' })
 
         map('n', ']h', function()
           if vim.wo.diff then
@@ -929,8 +860,8 @@ require('lazy').setup({
         require('opencode').toggle()
       end, { desc = 'Toggle embedded' })
       vim.keymap.set('n', '<leader>oc', function()
-        require('opencode').command()
-      end, { desc = 'Select command' })
+         require('opencode').command({})
+       end, { desc = 'Select command' })
       vim.keymap.set('n', '<leader>on', function()
         require('opencode').command 'session_new'
       end, { desc = 'New session' })
@@ -1245,24 +1176,8 @@ require('lazy').setup({
                   enableServerSideFuzzyMatch = true,
                   enableCompleteFunctionCalls = true,
                 },
-              },
-              typescript = {
-                preferences = {
-                  includeCompletionsForModuleExports = true,
-                  includeCompletionsWithInsertText = true,
-                  includeCompletionsForImportStatements = true,
-                  importModuleSpecifier = 'relative',
-                },
-                suggest = {
-                  autoImports = true,
-                  completeFunctionCalls = true,
-                  includeCompletionsForModuleExports = true,
-                  includeCompletionsWithInsertText = true,
-                  objectLiteralMethodCompletions = true,
-                  includeCompletionsWithSnippetText = true,
-                },
-              },
-              typescript = {
+               },
+               typescript = {
                 updateImportsOnFileMove = { enabled = 'always' },
                 suggest = {
                   completeFunctionCalls = true,
@@ -1526,7 +1441,7 @@ require('lazy').setup({
             columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 }, { 'kind' } },
           },
         },
-        ghost_text = { enabled = true, hl_group = 'BlinkCmpGhostText' },
+        ghost_text = { enabled = true },
       },
 
       sources = {
@@ -1611,49 +1526,6 @@ require('lazy').setup({
           colors.fg_gutter = fg_gutter
           colors.fg_sidebar = fg_dark
         end,
-        on_highlights = function(highlights, colors)
-          -- Optional: customize highlights here
-          -- Editor UI improvements
-          highlights.NormalFloat = { bg = colors.bg_dark, fg = colors.fg }
-          highlights.FloatBorder = { bg = colors.bg_dark, fg = colors.border }
-          highlights.CursorLineNr = { fg = colors.fg, bg = colors.bg_highlight }
-          highlights.LineNr = { fg = colors.fg_gutter }
-          highlights.LineNrAbove = { fg = colors.fg_gutter }
-          highlights.LineNrBelow = { fg = colors.fg_gutter }
-
-          -- Search and selection
-          highlights.Search = { bg = colors.bg_search, fg = colors.fg }
-          highlights.IncSearch = { bg = colors.bg_search, fg = colors.fg_dark }
-          highlights.Visual = { bg = colors.bg_visual, fg = colors.fg }
-
-          -- Telescope (fuzzy finder)
-          highlights.TelescopeNormal = { bg = colors.bg_dark, fg = colors.fg_dark }
-          highlights.TelescopeBorder = { bg = colors.bg_dark, fg = colors.border }
-          highlights.TelescopeSelection = { bg = colors.bg_highlight, fg = colors.fg }
-          highlights.TelescopeSelectionCaret = { bg = colors.bg_highlight, fg = colors.fg }
-
-          -- LSP and diagnostics
-          highlights.DiagnosticVirtualTextError = { bg = colors.none, fg = colors.red }
-          highlights.DiagnosticVirtualTextWarn = { bg = colors.none, fg = colors.yellow }
-          highlights.DiagnosticVirtualTextInfo = { bg = colors.none, fg = colors.blue }
-          highlights.DiagnosticVirtualTextHint = { bg = colors.none, fg = colors.teal }
-
-          -- Statusline and sidebar
-          highlights.StatusLine = { bg = colors.bg_statusline, fg = colors.fg_sidebar }
-          highlights.NvimTreeNormal = { bg = colors.bg_sidebar, fg = colors.fg_sidebar }
-          highlights.NvimTreeIndentMarker = { fg = colors.border }
-
-          -- Git signs (if using gitsigns.nvim)
-          highlights.GitSignsAdd = { fg = colors.green }
-          highlights.GitSignsChange = { fg = colors.blue }
-          highlights.GitSignsDelete = { fg = colors.red }
-
-          -- Diffview colors (VS Code style)
-          highlights.DiffAdd = { fg = 'NONE', bg = '#003300' }
-          highlights.DiffDelete = { fg = 'NONE', bg = '#330000' }
-          highlights.DiffChange = { fg = 'NONE', bg = '#003344' }
-          highlights.DiffText = { fg = 'NONE', bg = '#005577' }
-        end,
       }
 
       vim.cmd 'colorscheme tokyonight'
@@ -1677,33 +1549,6 @@ require('lazy').setup({
       vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#e67e80', italic = true })
       vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextInfo', { fg = '#7fbbb3', italic = true })
       vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextHint', { fg = '#83a598', italic = true })
-    end,
-  },
-
-  {
-    'Mofiqul/dracula.nvim',
-    lazy = false,
-    priority = 1000,
-    config = function()
-      local dracula = require 'dracula'
-
-      dracula.setup {
-        transparent_bg = false,
-        italic_comment = true,
-        show_end_of_buffer = false,
-        -- custom palette if you want
-        -- colors = { ... },
-        overrides = function(colors)
-          return {
-            -- -- dim inline ghost text compared to real code
-            BlinkCmpGhostText = { fg = colors.comment, italic = true },
-            CopilotSuggestion = { fg = colors.comment, italic = true },
-            LspReferenceText = { bg = colors.selection, sp = colors.purple, undercurl = true },
-            LspReferenceRead = { bg = colors.selection, sp = colors.purple, undercurl = true },
-            LspReferenceWrite = { bg = colors.selection, sp = colors.purple, undercurl = true },
-          }
-        end,
-      }
     end,
   },
 
