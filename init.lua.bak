@@ -285,50 +285,47 @@ require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
 
-  -- {
-  --   'nvim-neo-tree/neo-tree.nvim',
-  --   branch = 'v3.x',
-  --   dependencies = {
-  --     'nvim-lua/plenary.nvim',
-  --     'MunifTanjim/nui.nvim',
-  --     'nvim-tree/nvim-web-devicons',
-  --   },
-  --   lazy = false,
-  --   keys = {
-  --     { '<leader>e', '<Cmd>Neotree toggle reveal<CR>', desc = 'Toggle Neo-tree' },
-  --   },
-  --   opts = {
-  --     sources = { 'filesystem', 'git_status', 'buffers' },
-  --     filesystem = {
-  --       follow_current_file = {
-  --         enabled = true,
-  --         leave_dirs_open = false,
-  --       },
-  --       filtered_items = {
-  --         visible = true,
-  --         hide_dotfiles = false,
-  --         hide_gitignored = false,
-  --       },
-  --     },
-  --   },
-  -- },
-  --
   {
-    'stevearc/oil.nvim',
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'MunifTanjim/nui.nvim',
+    },
     lazy = false,
+    keys = {
+      { '<leader>e', '<Cmd>Neotree toggle reveal<CR>', desc = 'Toggle Neo-tree' },
+    },
     opts = {
-      default_file_explorer = true, -- replaces netrw
-      float = true,
-      view_options = {
-        show_hidden = true,
+      sources = { 'filesystem', 'git_status', 'buffers' },
+      filesystem = {
+        follow_current_file = {
+          enabled = true,
+          leave_dirs_open = false,
+        },
+        filtered_items = {
+          visible = true,
+          hide_dotfiles = false,
+          hide_gitignored = false,
+        },
       },
-      skip_confirm_for_simple_edits = true,
-      prompt_save_on_select_new_entry = true,
+      default_component_configs = {
+        icon = {
+          folder_closed = '󰉋',
+          folder_open = '󰝰',
+          folder_empty = '󰉖',
+          default = '󰈙',
+        },
+        name = {
+          use_git_status_colors = true,
+        },
+      },
     },
   },
   {
     'akinsho/bufferline.nvim',
     version = '*',
+    dependencies = 'nvim-tree/nvim-web-devicons',
     config = function()
       require('bufferline').setup {
         options = {
@@ -1535,7 +1532,7 @@ require('lazy').setup({
             columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 }, { 'kind' } },
           },
         },
-        ghost_text = { enabled = true },
+        ghost_text = { enabled = true, hl_group = 'BlinkCmpGhostText' },
       },
 
       sources = {
@@ -1689,15 +1686,39 @@ require('lazy').setup({
     end,
   },
 
+  {
+    'Mofiqul/dracula.nvim',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      local dracula = require 'dracula'
+
+      dracula.setup {
+        transparent_bg = false,
+        italic_comment = true,
+        show_end_of_buffer = false,
+        -- custom palette if you want
+        -- colors = { ... },
+        overrides = function(colors)
+          return {
+            -- -- dim inline ghost text compared to real code
+            BlinkCmpGhostText = { fg = colors.comment, italic = true },
+            CopilotSuggestion = { fg = colors.comment, italic = true },
+            LspReferenceText = { bg = colors.selection, sp = colors.purple, undercurl = true },
+            LspReferenceRead = { bg = colors.selection, sp = colors.purple, undercurl = true },
+            LspReferenceWrite = { bg = colors.selection, sp = colors.purple, undercurl = true },
+          }
+        end,
+      }
+    end,
+  },
+
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
-      -- Add mini.icons setup FIRST
-      require('mini.icons').setup()
-
       -- Better Around/Inside textobjects
       --
       -- Examples:
@@ -1765,6 +1786,7 @@ require('lazy').setup({
     'stevearc/aerial.nvim',
     dependencies = {
       'nvim-treesitter/nvim-treesitter',
+      'nvim-tree/nvim-web-devicons',
       'nvim-telescope/telescope.nvim',
     },
     config = function()
