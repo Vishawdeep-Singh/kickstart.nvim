@@ -1533,6 +1533,15 @@ require('lazy').setup({
           border = 'rounded',
           draw = {
             columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 }, { 'kind' } },
+            components = {
+              kind_icon = {
+                text = function(ctx)
+                  local mini_icons = require('mini.icons')
+                  local icon, hl = mini_icons.get('lsp', ctx.kind)
+                  return icon .. ' ', hl
+                end,
+              },
+            },
           },
         },
         ghost_text = { enabled = true },
@@ -1697,6 +1706,12 @@ require('lazy').setup({
     config = function()
       -- Add mini.icons setup FIRST
       require('mini.icons').setup()
+
+      -- Mock nvim-web-devicons so telescope and other plugins can use mini.icons
+      MiniIcons.mock_nvim_web_devicons()
+
+      -- Tweak LSP kind to use mini.icons for workspace symbols in Telescope
+      MiniIcons.tweak_lsp_kind()
 
       -- Better Around/Inside textobjects
       --
