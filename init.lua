@@ -185,6 +185,10 @@ vim.o.foldlevelstart = 99 -- Open all folds when opening a buffer
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+vim.keymap.set('n', '<leader>e', function()
+  require('oil').toggle_float()
+end, { desc = 'Toggle Oil (float)' })
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -318,12 +322,20 @@ require('lazy').setup({
     lazy = false,
     opts = {
       default_file_explorer = true, -- replaces netrw
-      float = true,
       view_options = {
         show_hidden = true,
       },
       skip_confirm_for_simple_edits = true,
       prompt_save_on_select_new_entry = true,
+      float = {
+        padding = 2,
+        max_width = 0.9,
+        max_height = 0.9,
+        border = 'rounded',
+        win_options = {
+          winblend = 10,
+        },
+      },
     },
   },
   {
@@ -774,6 +786,7 @@ require('lazy').setup({
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup {
+
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
@@ -811,7 +824,12 @@ require('lazy').setup({
       end, { desc = '[S]earch [D]iagnostics (current buffer)' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader><leader>', function()
+        builtin.buffers {
+          sort_mru = true,
+          ignore_current_buffer = true,
+        }
+      end, { desc = 'Switch buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -1536,7 +1554,7 @@ require('lazy').setup({
             components = {
               kind_icon = {
                 text = function(ctx)
-                  local mini_icons = require('mini.icons')
+                  local mini_icons = require 'mini.icons'
                   local icon, hl = mini_icons.get('lsp', ctx.kind)
                   return icon .. ' ', hl
                 end,
