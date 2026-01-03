@@ -92,6 +92,7 @@ local M = {
       vim.cmd 'colorscheme tokyonight'
     end,
   },
+
   {
     'sainnhe/everforest',
     lazy = false,
@@ -115,22 +116,22 @@ local M = {
   {
     'rebelot/kanagawa.nvim',
     priority = 1000,
-    config = function()
-      vim.cmd.colorscheme 'kanagawa-wave'
-    end,
+    config = function() end,
   },
   {
     'catppuccin/nvim',
     name = 'catppuccin',
     priority = 1000,
     config = function()
-      require('catppuccin').setup {
-        flavour = 'mocha',
-        dim_inactive = {
-          enabled = true,
-          percentage = 0.25,
-        },
-      }
+      require('catppuccin').setup {}
+
+      vim.api.nvim_set_hl(0, 'BlinkCmpItemAbbr', { fg = '#7d8590' })
+      vim.api.nvim_set_hl(0, 'BlinkCmpItemAbbrMatch', { fg = '#9da5b4', bold = true })
+      vim.api.nvim_set_hl(0, 'BlinkCmpItemKind', { fg = '#7d8590' })
+      vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { fg = '#30363d' })
+      vim.api.nvim_set_hl(0, 'BlinkCmpMenu', { bg = '#0d1117', fg = '#c9d1d9' })
+      vim.api.nvim_set_hl(0, 'BlinkCmpMenuSelection', { bg = '#2f333b', fg = '#c9d1d9', bold = true })
+      vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { fg = '#7d8590', italic = true })
     end,
   },
   -- lua/plugins/rose-pine.lua
@@ -155,6 +156,38 @@ local M = {
       vim.api.nvim_set_hl(0, 'BlinkCmpMenuSelection', { bg = '#2f333b', fg = '#c9d1d9', bold = true })
       vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { fg = '#30363d' })
       vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { fg = '#7d8590', italic = true })
+    end,
+  },
+
+  {
+    'Mofiqul/vscode.nvim',
+    priority = 1000,
+    config = function()
+      require('vscode').setup {
+        transparent = false,
+        italic_comments = true,
+        disable_nvimtree_bg = true,
+      }
+    end,
+  },
+  {
+    'ydkulks/cursor-dark.nvim',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      -- vim.cmd.colorscheme("cursor-dark-midnight")
+      require('cursor-dark').setup {
+        -- For theme
+        style = 'dark-midnight',
+      }
+      
+      -- Fix matching parentheses/brackets highlighting to prevent reverse cursor block
+      vim.api.nvim_set_hl(0, 'MatchParen', { 
+        bg = '#3e4451',  -- Subtle background highlight
+        fg = '#61afef',  -- Blue foreground for the matching character
+        bold = true,     -- Make it bold for visibility
+        reverse = false  -- Prevent reverse video mode
+      })
     end,
   },
 }

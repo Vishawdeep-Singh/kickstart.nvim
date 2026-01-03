@@ -24,10 +24,18 @@ return { -- Autocompletion
           'rafamadriz/friendly-snippets',
           config = function()
             require('luasnip.loaders.from_vscode').lazy_load()
+
+            local luasnip = require 'luasnip'
+            luasnip.filetype_extend('typescriptreact', { 'html' })
+            luasnip.filetype_extend('javascriptreact', { 'html' })
+            luasnip.filetype_extend('typescript', { 'javascript' })
           end,
         },
       },
-      opts = {},
+      opts = {
+        history = true,
+        delete_check_events = 'TextChanged',
+      },
     },
     'folke/lazydev.nvim',
     {
@@ -105,19 +113,19 @@ return { -- Autocompletion
     },
 
     -- Custom highlights for better visibility
-    highlight = {
-      use_nvim_cmp_as_default = false,
-      sets = {
-        default = {
-          ['ghost_text'] = { link = 'Comment' },
-          ['menu'] = { bg = 'NONE' },
-          ['menu_selection'] = { bg = '#2f333b', fg = '#c9d1d9' },
-          ['menu_border'] = { fg = '#30363d' },
-          ['scrollbar_thumb'] = { bg = '#30363d' },
-        },
-      },
-    },
-
+    -- highlight = {
+    --   use_nvim_cmp_as_default = false,
+    --   sets = {
+    --     default = {
+    --       ['ghost_text'] = { link = 'Comment' },
+    --       ['menu'] = { bg = 'NONE' },
+    --       ['menu_selection'] = { bg = '#2f333b', fg = '#c9d1d9' },
+    --       ['menu_border'] = { fg = '#30363d' },
+    --       ['scrollbar_thumb'] = { bg = '#30363d' },
+    --     },
+    --   },
+    -- },
+    --
     sources = {
       default = { 'lsp', 'path', 'snippets', 'copilot', 'buffer', 'lazydev' },
       providers = {
