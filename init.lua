@@ -216,6 +216,39 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end,
 })
 
+-- Disable heavy features for large files
+vim.api.nvim_create_autocmd('BufReadPost', {
+  pattern = '*',
+  callback = function(args)
+    local max_lines = 10000
+    local line_count = vim.api.nvim_buf_line_count(args.buf)
+
+    if line_count > max_lines then
+      vim.b[args.buf].large_file = true
+
+      vim.opt_local.syntax = ''
+      vim.opt_local.filetype = ''
+      vim.b[args.buf].completion = false
+
+      if pcall(require, 'nvim-treesitter') then
+        vim.treesitter.stop(args.buf)
+      end
+
+      vim.opt_local.foldmethod = 'manual'
+      vim.opt_local.foldenable = false
+
+      vim.schedule(function()
+        local clients = vim.lsp.get_active_clients { bufnr = args.buf }
+        for _, client in ipairs(clients) do
+          vim.lsp.buf_detach_client(args.buf, client.id)
+        end
+      end)
+
+      print 'Large file (>10k lines): Heavy features disabled'
+    end
+  end,
+})
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
