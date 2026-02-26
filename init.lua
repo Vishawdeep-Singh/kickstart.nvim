@@ -36,6 +36,7 @@ end)
 -- Enable break indent
 vim.o.breakindent = true
 
+vim.o.guifont = 'JetBrainsMono Nerd Font:h18'
 -- Save undo history
 vim.o.undofile = true
 
@@ -90,24 +91,6 @@ vim.opt.foldexpr = 'nvim_treesitter#foldexpr()'
 vim.opt.foldenable = false
 vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 99
--- Fix blink.cmp highlights for GitHub Dark themes
-vim.api.nvim_create_autocmd('ColorScheme', {
-  pattern = 'github_*',
-  callback = function()
-    vim.api.nvim_set_hl(0, 'BlinkCmpMenu', { bg = '#0d1117', fg = '#c9d1d9' })
-    vim.api.nvim_set_hl(0, 'BlinkCmpMenuSelection', { bg = '#2f333b', fg = '#c9d1d9', bold = true })
-    vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { fg = '#30363d' })
-    vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { fg = '#7d8590', italic = true })
-  end,
-})
-
--- Apply highlights immediately if GitHub theme is already active
-if vim.g.colors_name and vim.g.colors_name:match 'github_' then
-  vim.api.nvim_set_hl(0, 'BlinkCmpMenu', { bg = '#0d1117', fg = '#c9d1d9' })
-  vim.api.nvim_set_hl(0, 'BlinkCmpMenuSelection', { bg = '#2f333b', fg = '#c9d1d9', bold = true })
-  vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { fg = '#30363d' })
-  vim.api.nvim_set_hl(0, 'BlinkCmpGhostText', { fg = '#7d8590', italic = true })
-end
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
