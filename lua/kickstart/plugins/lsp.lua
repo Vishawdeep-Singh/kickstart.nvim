@@ -1,7 +1,6 @@
 return {
     "neovim/nvim-lspconfig",
     dependencies = {
-        "stevearc/conform.nvim",
         "mason-org/mason.nvim",
         "mason-org/mason-lspconfig.nvim",
         "hrsh7th/cmp-nvim-lsp",
@@ -9,14 +8,19 @@ return {
         "hrsh7th/cmp-path",
         "hrsh7th/cmp-cmdline",
         "hrsh7th/nvim-cmp",
-        "L3MON4D3/LuaSnip",
+        {
+            "L3MON4D3/LuaSnip",
+            dependencies = {
+                "rafamadriz/friendly-snippets",
+                config = function()
+                    require("luasnip.loaders.from_vscode").lazy_load()
+                end,
+            },
+        },
         "saadparwaiz1/cmp_luasnip",
         "j-hui/fidget.nvim",
     },
     config = function()
-        require("conform").setup({
-            formatters_by_ft = {},
-        })
         local cmp = require("cmp")
         local cmp_lsp = require("cmp_nvim_lsp")
         local capabilities = vim.tbl_deep_extend(
@@ -27,6 +31,75 @@ return {
         )
         require("fidget").setup({})
         require("mason").setup()
+
+        -- Better LSP hover documentation with border
+        vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
+            border = "rounded",
+            max_width = 80,
+            max_height = 20,
+        })
+
+        -- Better LSP signature help with border
+        vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+            border = "rounded",
+            max_width = 80,
+            max_height = 20,
+        })
+
+        -- Set up highlight groups for better differentiation
+        local function set_highlights()
+            -- Float window differentiation
+            vim.api.nvim_set_hl(0, "NormalFloat", { bg = "#26233a" })
+            vim.api.nvim_set_hl(0, "FloatBorder", { fg = "#6e6a86", bg = "#26233a" })
+            vim.api.nvim_set_hl(0, "FloatTitle", { fg = "#e0def4", bg = "#26233a", bold = true })
+
+            -- nvim-cmp highlights for better visibility
+            vim.api.nvim_set_hl(0, "CmpItemAbbr", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemAbbrDeprecated", { fg = "#6e6a86", strikethrough = true })
+            vim.api.nvim_set_hl(0, "CmpItemAbbrMatch", { fg = "#ebbcba", bold = true })
+            vim.api.nvim_set_hl(0, "CmpItemAbbrMatchFuzzy", { fg = "#ebbcba", bold = true })
+            vim.api.nvim_set_hl(0, "CmpItemMenu", { fg = "#9ccfd8", italic = true })
+
+            -- Cmp item kinds with rose-pine colors
+            vim.api.nvim_set_hl(0, "CmpItemKindText", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemKindMethod", { fg = "#ebbcba" })
+            vim.api.nvim_set_hl(0, "CmpItemKindFunction", { fg = "#ebbcba" })
+            vim.api.nvim_set_hl(0, "CmpItemKindConstructor", { fg = "#c4a7e7" })
+            vim.api.nvim_set_hl(0, "CmpItemKindField", { fg = "#9ccfd8" })
+            vim.api.nvim_set_hl(0, "CmpItemKindVariable", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemKindClass", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindInterface", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindModule", { fg = "#9ccfd8" })
+            vim.api.nvim_set_hl(0, "CmpItemKindProperty", { fg = "#9ccfd8" })
+            vim.api.nvim_set_hl(0, "CmpItemKindUnit", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindValue", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindEnum", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindKeyword", { fg = "#31748f" })
+            vim.api.nvim_set_hl(0, "CmpItemKindSnippet", { fg = "#c4a7e7" })
+            vim.api.nvim_set_hl(0, "CmpItemKindColor", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindFile", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemKindReference", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemKindFolder", { fg = "#e0def4" })
+            vim.api.nvim_set_hl(0, "CmpItemKindEnumMember", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindConstant", { fg = "#f6c177" })
+            vim.api.nvim_set_hl(0, "CmpItemKindStruct", { fg = "#9ccfd8" })
+            vim.api.nvim_set_hl(0, "CmpItemKindEvent", { fg = "#eb6f92" })
+            vim.api.nvim_set_hl(0, "CmpItemKindOperator", { fg = "#908caa" })
+            vim.api.nvim_set_hl(0, "CmpItemKindTypeParameter", { fg = "#9ccfd8" })
+
+            -- Selection highlight
+            vim.api.nvim_set_hl(0, "PmenuSel", { bg = "#44415a", fg = "#e0def4", bold = true })
+            vim.api.nvim_set_hl(0, "Pmenu", { bg = "#1f1d2e" })
+            vim.api.nvim_set_hl(0, "PmenuSbar", { bg = "#1f1d2e" })
+            vim.api.nvim_set_hl(0, "PmenuThumb", { bg = "#6e6a86" })
+        end
+
+        -- Apply highlights after colorscheme loads
+        vim.api.nvim_create_autocmd("ColorScheme", {
+            pattern = "*",
+            callback = set_highlights,
+        })
+        set_highlights()
 
         vim.api.nvim_create_autocmd("LspAttach", {
             group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
@@ -143,123 +216,6 @@ return {
                     },
                 },
             },
-            vtsls = {
-                settings = {
-                    updateImportsOnFileMove = { enabled = "always" },
-                    complete_function_calls = true,
-                    typescript = {
-                        suggest = {
-                            autoImports = true,
-                            completeFunctionCalls = true,
-                            includeCompletionsForModuleExports = true,
-                            includeCompletionsWithInsertText = true,
-                            objectLiteralMethodCompletions = true,
-                            includeCompletionsForImportStatements = true,
-                        },
-                        preferences = {
-                            includeCompletionsForModuleExports = true,
-                            includeCompletionsWithInsertText = true,
-                            importModuleSpecifier = "relative",
-                            quoteStyle = "single",
-                        },
-                    },
-                    javascript = {
-                        suggest = {
-                            autoImports = true,
-                            completeFunctionCalls = true,
-                            includeCompletionsForModuleExports = true,
-                            includeCompletionsWithInsertText = true,
-                            objectLiteralMethodCompletions = true,
-                            includeCompletionsForImportStatements = true,
-                        },
-                        preferences = {
-                            includeCompletionsForModuleExports = true,
-                            includeCompletionsWithInsertText = true,
-                            importModuleSpecifier = "relative",
-                            quoteStyle = "single",
-                        },
-                    },
-                    vtsls = {
-                        enableMoveToFileCodeAction = true,
-                        autoUseWorkspaceTsdk = true,
-                        experimental = {
-                            maxInlayHintLength = 30,
-                            completion = {
-                                enableServerSideFuzzyMatch = true,
-                                enableCompleteFunctionCalls = true,
-                            },
-                        },
-                        typescript = {
-                            preferences = {
-                                includeCompletionsForModuleExports = true,
-                                includeCompletionsWithInsertText = true,
-                                includeCompletionsForImportStatements = true,
-                                importModuleSpecifier = "relative",
-                            },
-                            suggest = {
-                                autoImports = true,
-                                completeFunctionCalls = true,
-                                includeCompletionsForModuleExports = true,
-                                includeCompletionsWithInsertText = true,
-                                objectLiteralMethodCompletions = true,
-                                includeCompletionsWithSnippetText = true,
-                            },
-                            updateImportsOnFileMove = { enabled = "always" },
-                            suggest = {
-                                completeFunctionCalls = true,
-                                includeCompletionsForModuleExports = true,
-                                includeAutomaticOptionalChainCompletions = true,
-                                includeCompletionsWithInsertText = true,
-                                objectLiteralMethodCompletions = true,
-                                includeCompletionsForImportStatements = true,
-                                autoImports = true,
-                            },
-                            preferences = {
-                                includeCompletionsForModuleExports = true,
-                                includeCompletionsWithInsertText = true,
-                                importModuleSpecifier = "relative",
-                                quoteStyle = "single",
-                            },
-                            completions = {
-                                completeFunctionCalls = true,
-                            },
-                            inlayHints = {
-                                enumMemberValues = { enabled = true },
-                                functionLikeReturnTypes = { enabled = true },
-                                parameterNames = { enabled = "all" },
-                                parameterTypes = { enabled = true },
-                                propertyDeclarationTypes = { enabled = true },
-                                variableTypes = { enabled = true },
-                            },
-                        },
-                        javascript = {
-                            updateImportsOnFileMove = { enabled = "always" },
-                            suggest = {
-                                completeFunctionCalls = true,
-                                includeCompletionsForModuleExports = true,
-                                includeAutomaticOptionalChainCompletions = true,
-                                includeCompletionsWithInsertText = true,
-                                objectLiteralMethodCompletions = true,
-                            },
-                            completions = {
-                                completeFunctionCalls = true,
-                            },
-                            inlayHints = {
-                                enumMemberValues = { enabled = true },
-                                functionLikeReturnTypes = { enabled = true },
-                                parameterNames = { enabled = "literals" },
-                                parameterTypes = { enabled = true },
-                                propertyDeclarationTypes = { enabled = true },
-                                variableTypes = { enabled = false },
-                            },
-                            preferences = {
-                                importModuleSpecifier = "relative",
-                                quoteStyle = "single",
-                            },
-                        },
-                    },
-                },
-            },
         }
 
         require("mason-lspconfig").setup({
@@ -348,6 +304,18 @@ return {
 
         local cmp_select = { behavior = cmp.SelectBehavior.Select }
         cmp.setup({
+            window = {
+                completion = cmp.config.window.bordered({
+                    border = "rounded",
+                    winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+                }),
+                documentation = cmp.config.window.bordered({
+                    border = "rounded",
+                    winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder,CursorLine:PmenuSel,Search:None",
+                    max_width = 80,
+                    max_height = 20,
+                }),
+            },
             snippet = {
                 expand = function(args)
                     require("luasnip").lsp_expand(args.body)
@@ -382,13 +350,12 @@ return {
                     end
                 end, { "i", "s" }),
             }),
-            sources = cmp.config.sources({
-                { name = "nvim_lsp" },
-                { name = "luasnip" },
-                { name = "path" },
-            }, {
-                { name = "buffer" },
-            }),
+            sources = {
+                { name = "nvim_lsp", group_index = 1, priority = 100 },
+                { name = "luasnip", group_index = 1, priority = 90 },
+                { name = "path", group_index = 1, priority = 80 },
+                { name = "buffer", group_index = 2, priority = 50 },
+            },
         })
         cmp.setup.cmdline({ "/", "?" }, {
             mapping = cmp.mapping.preset.cmdline(),

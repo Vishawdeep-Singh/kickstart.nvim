@@ -35,6 +35,12 @@ end)
 
 -- Enable break indent
 vim.o.breakindent = true
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.shiftwidth = 4
+vim.o.expandtab = true
+vim.o.autoindent = true
+vim.o.smartindent = true
 
 vim.o.guifont = 'JetBrainsMono Nerd Font:h18'
 -- Save undo history
@@ -144,6 +150,8 @@ vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w><C-k>', { desc = 'Move focus to th
 vim.keymap.set('n', '<leader>w', '<cmd>w<cr>', { desc = 'Save file' })
 vim.keymap.set('n', '<leader>|', '<cmd>vsplit<cr>', { desc = 'Split window vertically' })
 vim.keymap.set('n', '<leader>-', '<cmd>split<cr>', { desc = 'Split window horizontally' })
+vim.keymap.set('n', '<C-d>', '<C-d>zz', { noremap = true, silent = true, desc = 'Half-page down and center cursor' })
+vim.keymap.set('n', '<C-u>', '<C-u>zz', { noremap = true, silent = true, desc = 'Half-page up and center cursor' })
 vim.keymap.set({ 'n', 'x' }, '<leader>ca', function()
   require('tiny-code-action').code_action {}
 end, { noremap = true, silent = true, desc = '[C]ode [A]ction' })
@@ -260,8 +268,6 @@ rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'NMAC427/guess-indent.nvim', -- Detect tabstop and shiftwidth automatically
-
   { import = 'kickstart.plugins' },
 }, {
   ui = {
