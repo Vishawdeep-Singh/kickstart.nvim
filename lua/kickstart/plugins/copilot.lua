@@ -1,27 +1,16 @@
 return {
-  'zbirenbaum/copilot.lua',
+  'supermaven-inc/supermaven-nvim',
   event = 'InsertEnter',
-  opts = {
-    suggestion = {
-      enabled = true,
-      auto_trigger = true,
-      keymap = {
-        accept = '<C-y>', -- Ctrl+y to accept suggestion (standard vim completion key)
+  config = function()
+    require('supermaven-nvim').setup {
+      keymaps = {
+        accept_suggestion = '<C-y>',
+        clear_suggestion = '<C-]>',
         accept_word = '<M-w>',
-        accept_line = '<M-l>',
-        next = '<M-]>',
-        prev = '<M-[>',
-        dismiss = '<C-]>',
       },
-    },
-    panel = { enabled = false },
-    filetypes = {
-      yaml = true,
-      markdown = true,
-      help = false,
-      gitcommit = true,
-      gitrebase = false,
-      ['.'] = true,
-    },
-  },
+      condition = function()
+        return vim.b.large_file == true
+      end,
+    }
+  end,
 }

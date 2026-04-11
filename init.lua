@@ -189,54 +189,34 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- Fix fold updates - this is the key fix
 vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter', 'BufWritePost' }, {
   pattern = '*',
-  callback = function()
-    -- Only update folds if treesitter is active
-    if vim.bo.filetype ~= '' then
-      vim.opt_local.foldmethod = 'expr'
-      vim.opt_local.foldexpr = 'nvim_treesitter#foldexpr()'
+  callback = function(ev)
+    local buf = ev.buf
+    if vim.b[buf].large_file then
+      return
+    end
+    local ft = vim.bo[buf].filetype
+    if ft:sub(1, 7) == 'bigfile' then
+      return
+    end
+    if ft ~= '' then
+      vim.api.nvim_buf_call(buf, function()
+        vim.opt_local.foldmethod = 'expr'
+        vim.opt_local.foldexpr = 'nvim_treesitter#foldexpr()'
+      end)
     end
   end,
 })
 
 -- Force fold update after LSP attaches
 vim.api.nvim_create_autocmd('LspAttach', {
-  callback = function()
-    vim.defer_fn(function()
-      vim.cmd 'normal! zx' -- Update folds
-    end, 100)
-  end,
-})
-
--- Disable heavy features for large files
-vim.api.nvim_create_autocmd('BufReadPost', {
-  pattern = '*',
-  callback = function(args)
-    local max_lines = 10000
-    local line_count = vim.api.nvim_buf_line_count(args.buf)
-
-    if line_count > max_lines then
-      vim.b[args.buf].large_file = true
-
-      vim.opt_local.syntax = ''
-      vim.opt_local.filetype = ''
-      vim.b[args.buf].completion = false
-
-      if pcall(require, 'nvim-treesitter') then
-        vim.treesitter.stop(args.buf)
-      end
-
-      vim.opt_local.foldmethod = 'manual'
-      vim.opt_local.foldenable = false
-
-      vim.schedule(function()
-        local clients = vim.lsp.get_active_clients { bufnr = args.buf }
-        for _, client in ipairs(clients) do
-          vim.lsp.buf_detach_client(args.buf, client.id)
-        end
-      end)
-
-      print 'Large file (>10k lines): Heavy features disabled'
+  callback = function(ev)
+    local buf = ev.buf
+    if vim.b[buf].large_file or vim.bo[buf].filetype:sub(1, 7) == 'bigfile' then
+      return
     end
+    vim.defer_fn(function()
+      vim.cmd 'normal! zx'
+    end, 100)
   end,
 })
 
