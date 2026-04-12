@@ -1,6 +1,10 @@
 return {
   'nvim-treesitter/nvim-treesitter',
   build = ':TSUpdate',
+  lazy = false,
+  dependencies = {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+  },
 
   opts = function(_, opts)
     opts.ensure_installed = {
@@ -16,7 +20,7 @@ return {
       'markdown_inline',
     }
 
-    opts.auto_install = false
+    opts.auto_install = true
 
     opts.highlight = {
       enable = true,
@@ -31,6 +35,17 @@ return {
     opts.indent = {
       enable = true,
       disable = { 'ruby' },
+    }
+
+    opts.textobjects = {
+      select = {
+        enable = true,
+        lookahead = true,
+        keymaps = {
+          ['af'] = '@function.outer',
+          ['if'] = '@function.inner',
+        },
+      },
     }
 
     return opts
