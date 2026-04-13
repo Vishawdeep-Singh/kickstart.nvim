@@ -229,7 +229,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
 })
 
 -- Add site directory to runtimepath for treesitter parsers
-vim.opt.rtp:prepend(vim.fn.stdpath('data') .. '/site')
+vim.opt.rtp:prepend(vim.fn.stdpath 'data' .. '/site')
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
