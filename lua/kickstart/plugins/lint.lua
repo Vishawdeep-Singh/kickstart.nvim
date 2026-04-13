@@ -1,3 +1,6 @@
+--[[ LINTING DISABLED FOR PERFORMANCE
+-- Uncomment this file to re-enable linting
+
 return {
   'mfussenegger/nvim-lint',
   event = {
@@ -30,7 +33,9 @@ return {
 
     local lint_augroup = vim.api.nvim_create_augroup('lint', { clear = true })
 
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
+    -- DISABLED: Auto-lint on InsertLeave - causes typing lag
+    -- Only lint on BufEnter and BufWritePost
+    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost' }, {
       group = lint_augroup,
       callback = function()
         -- Find the project root for monorepo support
@@ -74,3 +79,6 @@ return {
     end, { desc = 'Trigger linting for current file' })
   end,
 }
+--]]
+
+return {}
