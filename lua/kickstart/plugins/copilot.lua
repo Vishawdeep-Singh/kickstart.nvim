@@ -9,7 +9,7 @@ return {
         accept_word = '<M-w>',
       },
       condition = function()
-        return not vim.b.large_file -- FIXED: Disable on large files, not enable
+        return vim.b.large_file == true
       end,
     }
   end,

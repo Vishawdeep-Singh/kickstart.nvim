@@ -1,3 +1,8 @@
+-- Enable Lua bytecode caching for faster startup
+if vim.loader then
+  vim.loader.enable()
+end
+
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
@@ -92,12 +97,13 @@ vim.o.confirm = true
 -- Auto-reload files when changed externally (e.g., by opencode)
 vim.o.autoread = true
 
--- DISABLED: Treesitter folding causes typing lag - testing without it
--- vim.opt.foldmethod = 'expr'
--- vim.opt.foldexpr = 'nvim_treesitter#foldexpr()'
--- vim.opt.foldenable = false
--- vim.opt.foldlevel = 99
--- vim.opt.foldlevelstart = 99
+-- Folding: Using treesitter (expr method)
+-- Note: May cause slight typing lag but provides automatic code folding
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.foldenable = true
+vim.opt.foldlevel = 99
+vim.opt.foldlevelstart = 99
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -187,40 +193,43 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.hl.on_yank()
   end,
 })
--- DISABLED: Folding autocmds cause typing lag
--- Fix fold updates - this is the key fix
--- vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter', 'BufWritePost' }, {
---   pattern = '*',
---   callback = function(ev)
---     local buf = ev.buf
---     if vim.b[buf].large_file then
---       return
---     end
---     local ft = vim.bo[buf].filetype
---     if ft:sub(1, 7) == 'bigfile' then
---       return
---     end
---     if ft ~= '' then
---       vim.api.nvim_buf_call(buf, function()
---         vim.opt_local.foldmethod = 'expr'
---         vim.opt_local.foldexpr = 'nvim_treesitter#foldexpr()'
---       end)
---     end
---   end,
--- })
+-- Treesitter folding autocmds for proper fold detection
+-- Fix fold updates - re-enable for treesitter folding
+vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter', 'BufWritePost' }, {
+  pattern = '*',
+  callback = function(ev)
+    local buf = ev.buf
+    if vim.b[buf].large_file then
+      return
+    end
+    local ft = vim.bo[buf].filetype
+    if ft:sub(1, 7) == 'bigfile' then
+      return
+    end
+    if ft ~= '' then
+      vim.api.nvim_buf_call(buf, function()
+        vim.opt_local.foldmethod = 'expr'
+        vim.opt_local.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+      end)
+    end
+  end,
+})
 
 -- Force fold update after LSP attaches
--- vim.api.nvim_create_autocmd('LspAttach', {
---   callback = function(ev)
---     local buf = ev.buf
---     if vim.b[buf].large_file or vim.bo[buf].filetype:sub(1, 7) == 'bigfile' then
---       return
---     end
---     vim.defer_fn(function()
---       vim.cmd 'normal! zx'
---     end, 100)
---   end,
--- })
+vim.api.nvim_create_autocmd('LspAttach', {
+  callback = function(ev)
+    local buf = ev.buf
+    if vim.b[buf].large_file or vim.bo[buf].filetype:sub(1, 7) == 'bigfile' then
+      return
+    end
+    vim.defer_fn(function()
+      vim.cmd 'normal! zx'
+    end, 100)
+  end,
+})
+
+-- Add site directory to runtimepath for treesitter parsers
+vim.opt.rtp:prepend(vim.fn.stdpath('data') .. '/site')
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
