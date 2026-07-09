@@ -12,9 +12,20 @@ local M = {
   {
     'folke/tokyonight.nvim',
     lazy = false,
-    opts = {},
-    config = function()
-      ColorMyPencils()
+    priority = 1000,
+    opts = {
+      style = 'night',
+      transparent = true,
+      terminal_colors = true,
+      styles = {
+        comments = { italic = false },
+        keywords = { italic = false },
+        sidebars = 'dark',
+        floats = 'dark',
+      },
+    },
+    config = function(_, opts)
+      require('tokyonight').setup(opts)
     end,
   },
   {
@@ -48,22 +59,6 @@ local M = {
     end,
   },
   {
-    'folke/tokyonight.nvim',
-    config = function()
-      require('tokyonight').setup {
-        style = 'storm',
-        transparent = true,
-        terminal_colors = true,
-        styles = {
-          comments = { italic = false },
-          keywords = { italic = false },
-          sidebars = 'dark',
-          floats = 'dark',
-        },
-      }
-    end,
-  },
-  {
     'rose-pine/neovim',
     name = 'rose-pine',
     config = function()
@@ -73,7 +68,7 @@ local M = {
           italic = false,
         },
       }
-      vim.cmd.colorscheme 'rose-pine'
+      ColorMyPencils('rose-pine-moon')
     end,
   },
 }

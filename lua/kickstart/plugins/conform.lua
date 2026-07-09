@@ -8,6 +8,7 @@ return {
       function()
         require('conform').format {
           async = true,
+          timeout_ms = 20000,
           lsp_format = 'fallback',
         }
       end,
@@ -20,7 +21,7 @@ return {
       if vim.b[bufnr].large_file then
         return
       end
-      return { timeout_ms = 2000, lsp_format = 'fallback' }
+      return { timeout_ms = 20000, lsp_format = 'fallback' }
     end,
     formatters_by_ft = {
       lua = { 'stylua' },
@@ -36,6 +37,8 @@ return {
       yaml = { 'prettier' },
       markdown = { 'prettier' },
       graphql = { 'prettier' },
+      xhtml = { 'prettier' },
+      xml = { 'prettier' },
     },
   },
 }

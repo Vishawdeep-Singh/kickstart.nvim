@@ -39,68 +39,70 @@ return {
       ---@module 'blink.cmp'
       ---@type blink.cmp.Config
       opts = {
-        keymap = {
-          -- 'default' (recommended) for mappings similar to built-in completions
-          --   <c-y> to accept ([y]es) the completion.
-          --    This will auto-import if your LSP supports it.
-          --    This will expand snippets if the LSP sent a snippet.
-          -- 'super-tab' for tab to accept
-          -- 'enter' for enter to accept
-          -- 'none' for no mappings
-          --
-          -- For an understanding of why the 'default' preset is recommended,
-          -- you will need to read `:help ins-completion`
-          --
-          -- No, but seriously. Please read `:help ins-completion`, it is really good!
-          --
-          -- All presets have the following mappings:
-          -- <tab>/<s-tab>: move to right/left of your snippet expansion
-          -- <c-space>: Open menu or open docs if already open
-          -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-          -- <c-e>: Hide menu
-          -- <c-k>: Toggle signature help
-          --
-          -- See :h blink-cmp-config-keymap for defining your own keymap
-          preset = 'default',
-
-          -- Custom keymaps
-          ['<Tab>'] = { 'select_next', 'fallback' },
-          ['<S-Tab>'] = { 'select_prev', 'fallback' },
-          ['<CR>'] = { 'accept', 'fallback' },
-
-          -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-          --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+        snippets = {
+          preset = 'luasnip',
         },
 
         appearance = {
-          -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-          -- Adjusts spacing to ensure icons are aligned
+          use_nvim_cmp_as_default = false,
           nerd_font_variant = 'mono',
         },
 
         completion = {
-          -- By default, you may press `<c-space>` to show the documentation.
-          -- Optionally, set `auto_show = true` to show the documentation after a delay.
-          documentation = { auto_show = false, auto_show_delay_ms = 500 },
+          accept = {
+            auto_brackets = {
+              enabled = true,
+            },
+          },
+          menu = {
+            draw = {
+              treesitter = { 'lsp' },
+            },
+          },
+          documentation = {
+            auto_show = false,
+            auto_show_delay_ms = 500,
+          },
+          ghost_text = {
+            enabled = vim.g.ai_cmp,
+          },
         },
+
+        signature = { enabled = true },
 
         sources = {
-          default = { 'lsp', 'path', 'snippets' },
+          default = { 'lsp', 'path', 'snippets', 'buffer' },
         },
 
-        snippets = { preset = 'luasnip' },
+        cmdline = {
+          enabled = true,
+          keymap = {
+            preset = 'cmdline',
+            ['<Right>'] = false,
+            ['<Left>'] = false,
+          },
+          completion = {
+            list = { selection = { preselect = false } },
+            menu = {
+              auto_show = function(ctx)
+                return vim.fn.getcmdtype() == ':'
+              end,
+            },
+            ghost_text = { enabled = true },
+          },
+        },
 
-        -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-        -- which automatically downloads a prebuilt binary when enabled.
-        --
-        -- By default, we use the Lua implementation instead, but you may enable
-        -- the rust implementation via `'prefer_rust_with_warning'`
-        --
-        -- See :h blink-cmp-config-fuzzy for more information
-        fuzzy = { implementation = 'lua' },
+        keymap = {
+          preset = 'default',
+          ['<C-y>'] = false,
+          ['<Tab>'] = false,
+          ['<S-Tab>'] = { 'select_prev', 'fallback' },
+          ['<CR>'] = { 'accept', 'fallback' },
+        },
 
-        -- Shows a signature help window while you type arguments for a function
-        signature = { enabled = true },
+        fuzzy = {
+          implementation = 'prefer_rust_with_warning',
+        },
       },
     },
     'j-hui/fidget.nvim',
@@ -128,10 +130,11 @@ return {
     })
     set_highlights()
 
-    -- Document Highlight: Only in Normal mode (no Insert mode lag)
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
       callback = function(event)
+        vim.diagnostic.config { virtual_text = false, signs = true, underline = false }
+
         local map = function(keys, func, desc, mode)
           mode = mode or 'n'
           vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
@@ -156,29 +159,6 @@ return {
 
         local client = vim.lsp.get_client_by_id(event.data.client_id)
 
-        -- Document Highlight: Only in Normal mode (CursorHold), NOT Insert mode
-        if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
-          local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-          -- Only in Normal mode - NO CursorHoldI to prevent typing lag
-          vim.api.nvim_create_autocmd('CursorHold', {
-            buffer = event.buf,
-            group = highlight_augroup,
-            callback = vim.lsp.buf.document_highlight,
-          })
-          vim.api.nvim_create_autocmd('CursorMoved', {
-            buffer = event.buf,
-            group = highlight_augroup,
-            callback = vim.lsp.buf.clear_references,
-          })
-          vim.api.nvim_create_autocmd('LspDetach', {
-            group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-            callback = function(event2)
-              vim.lsp.buf.clear_references()
-              vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-            end,
-          })
-        end
-
         if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
           map('<leader>th', function()
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
@@ -186,40 +166,6 @@ return {
         end
       end,
     })
-
-    vim.diagnostic.config {
-      severity_sort = true,
-      float = {
-        focusable = false,
-        style = 'minimal',
-        border = 'rounded',
-        source = 'if_many',
-        header = '',
-        prefix = '',
-      },
-      underline = { severity = vim.diagnostic.severity.ERROR },
-      signs = vim.g.have_nerd_font and {
-        text = {
-          [vim.diagnostic.severity.ERROR] = ' ',
-          [vim.diagnostic.severity.WARN] = ' ',
-          [vim.diagnostic.severity.INFO] = ' ',
-          [vim.diagnostic.severity.HINT] = ' ',
-        },
-      } or {},
-      virtual_text = {
-        source = 'if_many',
-        spacing = 2,
-        format = function(diagnostic)
-          local diagnostic_message = {
-            [vim.diagnostic.severity.ERROR] = diagnostic.message,
-            [vim.diagnostic.severity.WARN] = diagnostic.message,
-            [vim.diagnostic.severity.INFO] = diagnostic.message,
-            [vim.diagnostic.severity.HINT] = diagnostic.message,
-          }
-          return diagnostic_message[diagnostic.severity]
-        end,
-      },
-    }
 
     local servers = {
       pyright = {

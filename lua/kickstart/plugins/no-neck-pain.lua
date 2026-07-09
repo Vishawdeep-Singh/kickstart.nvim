@@ -6,7 +6,7 @@ return {
     { '<leader>z', '<cmd>NoNeckPain<cr>', desc = 'Toggle Center Window' },
   },
   opts = {
-    width = 120, -- or 180 for your 4K monitor
+    width = 180, -- or 180 for your 4K monitor
     buffers = {
       -- Don't change any colors or backgrounds
       scratchPad = {

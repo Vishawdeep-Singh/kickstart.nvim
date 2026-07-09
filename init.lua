@@ -45,7 +45,18 @@ vim.o.softtabstop = 4
 vim.o.shiftwidth = 4
 vim.o.expandtab = true
 vim.o.autoindent = true
+-- Disable smartindent for Python (causes issues with significant indentation)
+-- Smartindent is designed for C-style languages
 vim.o.smartindent = true
+
+-- Python-specific: disable smartindent and use treesitter/autoindent
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'python',
+  callback = function()
+    vim.opt_local.smartindent = false
+    vim.opt_local.autoindent = true
+  end,
+})
 
 vim.o.guifont = 'JetBrainsMono Nerd Font:h18'
 -- Save undo history
@@ -59,7 +70,7 @@ vim.o.smartcase = true
 vim.o.signcolumn = 'yes'
 
 -- Decrease update time
-vim.o.updatetime = 100
+vim.o.updatetime = 50
 
 -- Decrease mapped sequence wait time
 vim.o.timeoutlen = 300
@@ -68,26 +79,16 @@ vim.o.timeoutlen = 300
 vim.o.splitright = true
 vim.o.splitbelow = true
 
--- Sets how neovim will display certain whitespace characters in the editor.
---  See `:help 'list'`
---  and `:help 'listchars'`
---
---  Notice listchars is set using `vim.opt` instead of `vim.o`.
---  It is very similar to `vim.o` but offers an interface for conveniently interacting with tables.
---   See `:help lua-options`
---   and `:help lua-options-guide`
-vim.o.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.o.hlsearch = false
+vim.o.incsearch = true
 
--- Preview substitutions live, as you type!
-vim.o.inccommand = 'split'
-vim.o.guicursor = ''
+vim.o.list = false
 
--- Show which line your cursor is on
-vim.o.cursorline = true
+vim.opt.guicursor = ''
 
--- Minimal number of screen lines to keep above and below the cursor.
-vim.o.scrolloff = 10
+vim.o.cursorline = false
+
+vim.o.scrolloff = 8
 
 -- if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
 -- instead raise a dialog asking if you wish to save the current file(s)
@@ -97,10 +98,9 @@ vim.o.confirm = true
 -- Auto-reload files when changed externally (e.g., by opencode)
 vim.o.autoread = true
 
--- Folding: Using treesitter (expr method)
--- Note: May cause slight typing lag but provides automatic code folding
 vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.foldtext = 'v:lua.vim.treesitter.foldtext()'
 vim.opt.foldenable = true
 vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 99
@@ -117,7 +117,23 @@ vim.keymap.set('n', '<leader>e', function()
 end, { desc = 'Toggle Oil (float)' })
 
 -- Diagnostic keymaps
+vim.keymap.set('n', '<leader>vd', vim.diagnostic.open_float, { desc = 'Diagnostic float' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+vim.diagnostic.config {
+  severity_sort = true,
+  float = {
+    focusable = false,
+    style = 'minimal',
+    border = 'rounded',
+    source = 'if_many',
+    header = '',
+    prefix = '',
+  },
+  signs = true,
+  virtual_text = false,
+  underline = false,
+}
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -155,13 +171,13 @@ vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w><C-l>', { desc = 'Move focus to th
 vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w><C-k>', { desc = 'Move focus to the upper window' })
 vim.keymap.set('n', '<leader>w', '<cmd>w<cr>', { desc = 'Save file' })
+vim.keymap.set('n', '<S-h>', '<cmd>cprev<cr>zz', { desc = 'Quickfix prev' })
+vim.keymap.set('n', '<S-l>', '<cmd>cnext<cr>zz', { desc = 'Quickfix next' })
 vim.keymap.set('n', '<leader>|', '<cmd>vsplit<cr>', { desc = 'Split window vertically' })
 vim.keymap.set('n', '<leader>-', '<cmd>split<cr>', { desc = 'Split window horizontally' })
 vim.keymap.set('n', '<C-d>', '<C-d>zz', { noremap = true, silent = true, desc = 'Half-page down and center cursor' })
 vim.keymap.set('n', '<C-u>', '<C-u>zz', { noremap = true, silent = true, desc = 'Half-page up and center cursor' })
-vim.keymap.set({ 'n', 'x' }, '<leader>ca', function()
-  require('tiny-code-action').code_action {}
-end, { noremap = true, silent = true, desc = '[C]ode [A]ction' })
+vim.keymap.set({ 'n', 'x' }, '<leader>ca', vim.lsp.buf.code_action, { noremap = true, silent = true, desc = '[C]ode [A]ction' })
 
 -- Merge conflict helper keymaps (Diffview)
 vim.keymap.set('n', '<leader>mo', '<cmd>DiffviewOpen<cr>', { desc = '[M]erge: [O]pen diffview' })
@@ -191,6 +207,16 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
     vim.hl.on_yank()
+  end,
+})
+
+vim.api.nvim_create_autocmd('BufWritePre', {
+  group = vim.api.nvim_create_augroup('kickstart-trim-whitespace', { clear = true }),
+  pattern = '*',
+  callback = function()
+    local save_cursor = vim.fn.getpos '.'
+    pcall(vim.cmd, [[%s/\s\+$//e]])
+    vim.fn.setpos('.', save_cursor)
   end,
 })
 -- Treesitter folding autocmds for proper fold detection

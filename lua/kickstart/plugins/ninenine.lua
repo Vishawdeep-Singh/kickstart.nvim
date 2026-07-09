@@ -2,6 +2,10 @@ return {
   'ThePrimeagen/99',
   dependencies = {
     'nvim-telescope/telescope.nvim',
+    {
+      'saghen/blink.compat',
+      version = '2.*',
+    },
   },
   config = function()
     local _99 = require '99'
@@ -10,71 +14,73 @@ return {
     local basename = vim.fs.basename(cwd)
 
     _99.setup {
-      -- Use OpenCode as the AI provider (default)
-      -- Options: OpenCodeProvider, ClaudeCodeProvider, CursorAgentProvider, GeminiCLIProvider
-      provider = _99.Providers.OpenCodeProvider,
-
-      model = 'opencode-go/kimi-k2.5',
-
-      -- Temporary directory for AI processing (MUST be inside project CWD for permissions)
+      provider = _99.Providers.CursorAgentProvider,
+      model = 'composer-2.5-fast',
+      show_in_flight_requests = true,
       tmp_dir = './tmp',
-
-      -- Auto-load AGENT.md files from project directories
-      md_files = { 'AGENT.md' },
-
-      -- Enable auto-add skills
+      md_files = { 'AGENTS.md', 'AGENT.md' },
       auto_add_skills = true,
-
-      -- Logging configuration (for debugging)
       logger = {
         level = _99.DEBUG,
         path = '/tmp/' .. basename .. '.99.debug',
         print_on_error = true,
       },
-
-      -- Completion settings for #rules and @files
       completion = {
-        -- Autocomplete source: 'native' (default), 'cmp', or 'blink'
-        source = 'native',
-
-        -- Custom rules directories (each containing SKILL.md files)
-        custom_rules = {},
-
-        -- File reference settings (@files)
+        source = 'blink',
+        custom_rules = {
+          '~/.agents/skills/',
+        },
         files = {
           enabled = true,
         },
       },
-
-      -- Display errors in UI
       display_errors = true,
     }
 
-    -- ==========================================
-    -- KEYMAPS (Traditional 99 prompt buffer)
-    -- ==========================================
-
-    -- Visual mode: Send selection to AI for replacement
     vim.keymap.set('v', '<leader>9v', function()
       _99.visual()
     end, { desc = '99: Visual selection AI' })
 
-    -- Search across project with AI analysis
+    vim.keymap.set('v', '<leader>9vv', function()
+      _99.visual()
+    end, { desc = '99: Visual' })
+
+    vim.keymap.set('v', '<leader>9vp', function()
+      _99.visual_prompt()
+    end, { desc = '99: Visual prompt' })
+
     vim.keymap.set('n', '<leader>9s', function()
       _99.search()
     end, { desc = '99: Search with AI' })
 
-    -- Tutorial from AI
+    vim.keymap.set('n', '<leader>9x', function()
+      _99.stop_all_requests()
+    end, { desc = '99: Stop all' })
+
+    vim.keymap.set('n', '<leader>9i', function()
+      _99.info()
+    end, { desc = '99: Info' })
+
+    vim.keymap.set('n', '<leader>9l', function()
+      _99.view_logs()
+    end, { desc = '99: Logs' })
+
+    vim.keymap.set('n', '<leader>9n', function()
+      _99.next_request_logs()
+    end, { desc = '99: Next log' })
+
+    vim.keymap.set('n', '<leader>9p', function()
+      _99.prev_request_logs()
+    end, { desc = '99: Prev log' })
+
     vim.keymap.set('n', '<leader>9t', function()
       _99.tutorial()
     end, { desc = '99: Tutorial' })
 
-    -- Telescope model selector
     vim.keymap.set('n', '<leader>9m', function()
       require('99.extensions.telescope').select_model()
     end, { desc = '99: Select AI model' })
 
-    -- Telescope tutorial picker
     vim.keymap.set('n', '<leader>9T', function()
       local ok, pickers = pcall(require, 'telescope.pickers')
       if not ok then
@@ -127,9 +133,6 @@ return {
         :find()
     end, { desc = '99: Open tutorial (telescope)' })
 
-    -- ==========================================
-    -- WORK (task tracker + AI search)
-    -- ==========================================
     local Worker = _99.Extensions.Worker
 
     vim.keymap.set('n', '<leader>9w', function()
@@ -139,9 +142,5 @@ return {
     vim.keymap.set('n', '<leader>9W', function()
       Worker.search()
     end, { desc = '99: Search what is left for work item' })
-
-    -- ==========================================
-    -- CUSTOM COMMANDS
-    -- ==========================================
   end,
 }
